@@ -17,3 +17,7 @@ Use Cases
 - Simple AWS Athena Alternative.
 - Convert your json documents into a SQL db.
 - Query your CSV files easily and join them with other data.
+
+How it works?
+=============
+> internaly `xyr` utilizes `SQLite` as an embeded sql datastore (it may be changed in future and we can add multiple data stores), when you define a table in ``
