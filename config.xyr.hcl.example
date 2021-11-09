@@ -1,0 +1,7 @@
+data_dir = "./db/"
+
+table "local_data_dir" {
+    dsn = "local+json://./data"
+    loader = ".*"
+    columns = ["key1", "key2", "key3"]
+}
