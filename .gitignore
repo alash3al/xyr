@@ -16,3 +16,4 @@
 
 # local tmp dir
 tmp/
+*.hcl

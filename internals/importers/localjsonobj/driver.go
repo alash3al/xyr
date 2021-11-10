@@ -1,4 +1,4 @@
-package localjson
+package localjsonobj
 
 import (
 	"encoding/json"
@@ -11,10 +11,12 @@ import (
 	"strings"
 )
 
+// Driver represents the main importer driver
 type Driver struct {
 	dir string
 }
 
+// Open implements Importer#open
 func (d *Driver) Open(dsn string) error {
 	parts := strings.Split(dsn, "://")
 	if len(parts) < 1 {
@@ -35,7 +37,8 @@ func (d *Driver) Open(dsn string) error {
 	return nil
 }
 
-func (d *Driver) Run(loaderRegexp string) (<-chan map[string]interface{}, <-chan error, <-chan bool) {
+// Import implements Importer#import
+func (d *Driver) Import(loaderRegexp string) (<-chan map[string]interface{}, <-chan error, <-chan bool) {
 	resultChan := make(chan map[string]interface{})
 	errChan := make(chan error)
 	doneChan := make(chan bool)

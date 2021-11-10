@@ -4,7 +4,7 @@ xyr [WIP]
 
 Supported Drivers
 =================
-- [x] `local+json`: for extracting, transforming and loading json documents from local filesystem into `xyr`.
+- [x] `local+jsonobj`: for extracting, transforming and loading json documents (objects) from local filesystem into `xyr`.
 - [x] `local+csv`: for extracting, transforming and loading csv documents from local filesystem into `xyr`.
 - [ ] `s3+json`: for extracting, transforming and loading json documents from `S3`.
 - [ ] `s3+csv`: for extracting, transforming and loading csv documents from `S3`.

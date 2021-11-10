@@ -5,125 +5,85 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
-	"sync"
 
-	"github.com/alash3al/xyr/config"
-	"github.com/alash3al/xyr/driver"
+	"github.com/alash3al/xyr/internals/commands"
+	"github.com/alash3al/xyr/internals/kernel"
 	"github.com/alash3al/xyr/utils"
 	"github.com/jmoiron/sqlx"
 	"github.com/urfave/cli/v2"
 
-	_ "github.com/alash3al/xyr/driver/drivers/localjson"
+	_ "github.com/alash3al/xyr/internals/importers/localjsonobj"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
-	cfg    *config.Config
-	dbConn *sqlx.DB
-
-	tables = map[string]*config.Table{}
+	kernelEnv = &kernel.Env{
+		Tables: map[string]*kernel.Table{},
+	}
 )
 
 func main() {
-	var err error
-
-	cfg, err = config.LoadConfigFromFile(utils.Getenv("XYRCONFIG", "./config.xyr.hcl"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	info, err := os.Stat(cfg.DataDir)
-	if err != os.ErrNotExist {
-		err = os.MkdirAll(cfg.DataDir, 0755)
-	}
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if info != nil && !info.IsDir() {
-		log.Fatal(fmt.Errorf("the specified path (%s) isn't a valid directory", cfg.DataDir))
-	}
-
-	dbConn, err = sqlx.Connect("sqlite3", filepath.Join(cfg.DataDir, "db.xyr")+"?_journal_mode=wal")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, tb := range cfg.Tables {
-		d, err := driver.Open(tb.DSN)
+	// load config file and parse it
+	{
+		cfg, err := kernel.LoadConfigFromFile(utils.Getenv("XYRCONFIG", "./config.xyr.hcl"))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if len(tb.Columns) < 1 {
-			log.Fatal(fmt.Errorf("there is no columns for table %s", tb.Name))
+		kernelEnv.Config = cfg
+	}
+
+	// creates the main data directory if not exists
+	{
+		info, err := os.Stat(kernelEnv.Config.DataDir)
+		if err != os.ErrNotExist {
+			err = os.MkdirAll(kernelEnv.Config.DataDir, 0755)
 		}
 
-		tables[tb.Name] = tb
-		tables[tb.Name].DriverInstance = d
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if info != nil && !info.IsDir() {
+			log.Fatal(fmt.Errorf("the specified path (%s) isn't a valid directory", kernelEnv.Config.DataDir))
+		}
+	}
+
+	// Initialize the storage engine
+	{
+		dbConn, err := sqlx.Connect("sqlite3", filepath.Join(kernelEnv.Config.DataDir, "db.xyr")+"?_journal_mode=wal")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		kernelEnv.DBConn = dbConn
+	}
+
+	// cache the tables inside our kernel environment container
+	{
+		for _, tb := range kernelEnv.Config.Tables {
+			d, err := kernel.OpenImporter(tb.DSN)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if len(tb.Columns) < 1 {
+				log.Fatal(fmt.Errorf("there is no columns for table %s", tb.Name))
+			}
+
+			kernelEnv.Tables[tb.Name] = tb
+			kernelEnv.Tables[tb.Name].ImporterInstance = d
+		}
 	}
 
 	app := &cli.App{
-		Name:  "xyr",
-		Usage: "query multiple data sources using sql",
-		Commands: []*cli.Command{
-			{
-				Name:  "import",
-				Usage: "import the defined tables data into xyr",
-				Action: func(c *cli.Context) error {
-					wg := &sync.WaitGroup{}
+		Name:     "xyr",
+		Usage:    "query multiple data sources using sql",
+		Commands: []*cli.Command{},
+	}
 
-					for name, tb := range tables {
-						if _, err := dbConn.Exec("DROP TABLE IF EXISTS " + name); err != nil {
-							log.Fatal(err)
-						}
-
-						if _, err := dbConn.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", name, strings.Join(tb.Columns, ","))); err != nil {
-							log.Fatal(err)
-						}
-
-						wg.Add(1)
-						go (func(name string, tb *config.Table) {
-							defer wg.Done()
-							resultChan, errChan, doneChan := tb.DriverInstance.Run(tb.Loader)
-
-						eventLoop:
-							for {
-								select {
-								case <-doneChan:
-									break eventLoop
-								case err := <-errChan:
-									log.Println(err)
-								case result := <-resultChan:
-									filteredResult := map[string]interface{}{}
-									placeholders := []string{}
-									for _, col := range tb.Columns {
-										val, exists := result[col]
-										if !exists {
-											continue
-										}
-										filteredResult[col] = val
-										placeholders = append(placeholders, ":"+col)
-									}
-									querySQL := fmt.Sprintf("INSERT INTO %s VALUES(%s)", name, strings.Join(placeholders, ","))
-									if _, err := dbConn.NamedExec(querySQL, filteredResult); err != nil {
-										log.Println(err)
-										continue
-									}
-								}
-							}
-
-						})(name, tb)
-					}
-
-					wg.Wait()
-
-					return nil
-				},
-			},
-		},
+	for _, cmdFactory := range commands.GetRegisteredCommands() {
+		app.Commands = append(app.Commands, cmdFactory(kernelEnv))
 	}
 
 	app.Run(os.Args)
