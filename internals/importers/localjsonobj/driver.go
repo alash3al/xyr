@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/alash3al/xyr/utils"
 )
 
 // Driver represents the main importer driver
@@ -71,13 +73,28 @@ func (d *Driver) Import(loaderRegexp string) (<-chan map[string]interface{}, <-c
 				decoder := json.NewDecoder(file)
 
 				for {
-					var m map[string]interface{}
+					var val interface{}
 
-					if decoder.Decode(&m) == io.EOF {
+					if decoder.Decode(&val) == io.EOF {
 						break
 					}
 
-					resultChan <- m
+					switch val := val.(type) {
+					case map[string]interface{}:
+						resultChan <- val
+					case []interface{}:
+						mSlice, err := utils.InterfaceSliceToMapStringInterfaceSlice(val)
+						if err != nil {
+							errChan <- err
+							continue
+						} else {
+							for _, item := range mSlice {
+								resultChan <- item
+							}
+						}
+					default:
+						errChan <- fmt.Errorf("unsupported value (%v), we only support array of objects or just objects", val)
+					}
 				}
 
 				doneChan <- true
