@@ -78,6 +78,7 @@ Plan
     - [x] oracle
     - [x] hana
     - [x] sqlserver
+- [ ] Add an S3 driver
 - [ ] Expose another API beside the `CLI` to enable external Apps to query `xyr`.
     - [ ] JSON Endpoint?
     - [ ] Mysql Protocol?
