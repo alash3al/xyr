@@ -1,7 +1,15 @@
-data_dir = "./db/"
+data_dir = "./tmp/db/"
 
-table "local_data_dir" {
-    dsn = "local+json://./data"
+table "users" {
+    driver = "jsondir"
+    source = "./tmp/data/users"
     loader = ".*"
-    columns = ["key1", "key2", "key3"]
+    columns = ["id", "email"]
+}
+
+table "users2" {
+    driver = "sqlite3"
+    source = "file:./tmp/db/db.xyr?_query_only=true"
+    loader = "SELECT id, email FROM users"
+    columns = ["id", "email"]
 }

@@ -12,7 +12,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/urfave/cli/v2"
 
-	_ "github.com/alash3al/xyr/internals/importers/localjsonobj"
+	_ "github.com/alash3al/xyr/internals/importers/jsondir"
+	_ "github.com/alash3al/xyr/internals/importers/sql"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -62,7 +63,7 @@ func main() {
 	// cache the tables inside our kernel environment container
 	{
 		for _, tb := range kernelEnv.Config.Tables {
-			d, err := kernel.OpenImporter(tb.DSN)
+			d, err := kernel.OpenImporter(tb.ImporterName, tb.DSN)
 			if err != nil {
 				log.Fatal(err)
 			}

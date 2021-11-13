@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/alash3al/xyr/utils"
 )
@@ -19,22 +18,17 @@ type Driver struct {
 }
 
 // Open implements Importer#open
-func (d *Driver) Open(dsn string) error {
-	parts := strings.Split(dsn, "://")
-	if len(parts) < 1 {
-		return fmt.Errorf("invalid dsn format for (%s)", dsn)
-	}
-
-	info, err := os.Stat(parts[1])
+func (d *Driver) Open(source string) error {
+	info, err := os.Stat(source)
 	if err != nil {
-		return fmt.Errorf("unable to open (%s) due to: %s", parts[1], err)
+		return fmt.Errorf("unable to open (%s) due to: %s", source, err)
 	}
 
 	if !info.IsDir() {
-		return fmt.Errorf("the provided path (%s) isn't a directory", parts[1])
+		return fmt.Errorf("the provided path (%s) isn't a directory", source)
 	}
 
-	d.dir = parts[1]
+	d.dir = source
 
 	return nil
 }
@@ -45,14 +39,21 @@ func (d *Driver) Import(loaderRegexp string) (<-chan map[string]interface{}, <-c
 	errChan := make(chan error)
 	doneChan := make(chan bool)
 
-	re, err := regexp.Compile(loaderRegexp)
-	if err != nil {
-		errChan <- err
-		doneChan <- true
-		goto eof
-	}
-
 	go (func() {
+		defer (func() {
+			doneChan <- true
+
+			close(resultChan)
+			close(errChan)
+			close(doneChan)
+		})()
+
+		re, err := regexp.Compile(loaderRegexp)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
 		errChan <- filepath.Walk(
 			d.dir,
 			func(path string, info fs.FileInfo, err error) error {
@@ -97,13 +98,10 @@ func (d *Driver) Import(loaderRegexp string) (<-chan map[string]interface{}, <-c
 					}
 				}
 
-				doneChan <- true
-
 				return nil
 			},
 		)
 	})()
 
-eof:
 	return resultChan, errChan, doneChan
 }

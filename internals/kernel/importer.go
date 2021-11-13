@@ -2,7 +2,6 @@ package kernel
 
 import (
 	"fmt"
-	"net/url"
 	"sync"
 )
 
@@ -18,33 +17,28 @@ var (
 )
 
 // RegisterImporter registers the given importer into the global imports registry
-func RegisterImporter(name string, driver Importer) error {
+func RegisterImporter(driverName string, driver Importer) error {
 	importersLock.Lock()
 	defer importersLock.Unlock()
 
-	if _, exists := importers[name]; exists {
-		return fmt.Errorf("duplicate driver name %s", name)
+	if _, exists := importers[driverName]; exists {
+		return fmt.Errorf("duplicate driver name %s", driverName)
 	}
 
-	importers[name] = driver
+	importers[driverName] = driver
 
 	return nil
 }
 
 // OpenImporter opens the specified importer via its dsn
-func OpenImporter(dsn string) (Importer, error) {
-	u, err := url.Parse(dsn)
-	if err != nil {
-		return nil, err
-	}
-
+func OpenImporter(driverName, dsn string) (Importer, error) {
 	importersLock.Lock()
 	defer importersLock.Unlock()
 
-	driver, exists := importers[u.Scheme]
+	driver, exists := importers[driverName]
 
 	if !exists {
-		return nil, fmt.Errorf("driver %s not found", u.Scheme)
+		return nil, fmt.Errorf("driver %s not found", driverName)
 	}
 
 	return driver, driver.Open(dsn)

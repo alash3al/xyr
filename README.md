@@ -9,14 +9,24 @@ Example
 ```hcl
 # this file is `./config.xyr.hcl`
 table "users" {
-    // [D]ata [S]ource [N]ame as: "[drivername]://driver_specs"
-    dsn = "jsondir://./tmp/data/users"
+    // the driver we want
+    driver = "jsondir"
 
-    // which columns we want to load
-    // this expect that our json objects contains these properties.
+    // the data source directory
+    source = "/tmp/data/users"
+
+    // xyr will try to create a table into its internal storage, so it needs
+    // to know at least what are the required columns names of your data.
+    // i.e: {"id": 1, "email": "user@example.com", "age": 20}
+    // but we only need "id" and "email", so we defined both in the below columns array
+    // and not that the ordering is the same as our example.
     columns = ["id", "email"]
 
-    // which filenames we want to be only loaded into xyr using regular expressions
+    // what do you want to load
+    // in case of jsondir, we can specify a regex pattern to filter the files 
+    // using the filename
+    // but if we're using an SQL driver we can provide an sql statement that reads the data
+    // from the source SQL based database.
     loader = ".*"
 }
 ```
@@ -31,11 +41,18 @@ Installation
 
 Supported Drivers
 =================
-- [x] `jsondir`: for extracting, transforming and loading json documents (objects/[]objects) from local filesystem directory (recursive) into `xyr`.
-- [ ] `jsons3`: for extracting, transforming and loading json documents from `S3` (something like AWS Athena).
-- [ ] `postgresql`: for extracting, transforming and loading postgres results.
-- [ ] `clickhouse`: for extracting, transforming and loading clickhouse results.
-- [ ] `redis`: for extracting, transforming and loading redis datastructures.
+| Driver | Source |
+---------| ------ |
+| `jsondir`| `/PATH/TO/JSON/DATA/DIR`|
+| `mysql`| `usrname:password@tcp(server:port)/dbname?option1=value1&...`|
+| `postgres`| `postgresql://username:password@server:port/dbname?option1=value1`|
+| `sqlite3`| `/path/to/db.sqlite?option1=value1`|
+| `sqlserver` | `sqlserver://username:password@host/instance?param1=value&param2=value` |
+|             | `sqlserver://username:password@host:port?param1=value&param2=value`|
+|             | `sqlserver://sa@localhost/SQLExpress?database=master&connection+timeout=30`|
+| `hana` |   `hdb://user:password@host:port` |
+| `clickhouse` |   `tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000` |
+| `oracle` |   `tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000` |
 
 Use Cases
 =========
@@ -53,6 +70,14 @@ Plan
 - [x] Building the initial core.
 - [x] Add the basic `import` command for importing the tables into `xyr`.
 - [x] Add the `exec` command to execute SQL query.
+- [x] Add well known SQL drivers
+    - [x] mysql
+    - [x] postgres
+    - [x] sqlite3
+    - [x] clickhouse
+    - [x] oracle
+    - [x] hana
+    - [x] sqlserver
 - [ ] Expose another API beside the `CLI` to enable external Apps to query `xyr`.
     - [ ] JSON Endpoint?
     - [ ] Mysql Protocol?
