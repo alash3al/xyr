@@ -1,6 +1,6 @@
 xyr [WIP]
 =========
-> `xyr` is a very lightweight, simple and powerful data ETL platform that helps you to query available data sources using `SQL`.
+> `xyr` is a very lightweight, simple, and powerful data ETL platform that helps you to query available data sources using `SQL`.
 
 Example
 =======
@@ -58,11 +58,11 @@ Use Cases
 =========
 - Simple Presto Alternative.
 - Simple AWS Athena Alternative.
-- Convert your json documents into a SQL db.
+- Convert your JSON documents into a SQL DB.
 - Query your CSV files easily and join them with other data.
 
-How it works?
-=============
+How does it work?
+==================
 > internaly `xyr` utilizes `SQLite` as an embeded sql datastore (it may be changed in future and we can add multiple data stores), when you define a table in `XYRCONFIG` file then run `$ xyr table:import` you will be able to import all defined tables as well querying them via `$ xyr exec "SELECT * FROM TABLE_NAME_HERE"` which outputs json result by default.
 
 Plan
