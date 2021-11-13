@@ -18,19 +18,16 @@ func init() {
 // Import implements the import sub command
 func Import(env *kernel.Env) *cli.Command {
 	return &cli.Command{
-		Name:  "table:import",
-		Usage: "import the defined tables data into xyr",
-		Flags: []cli.Flag{
-			&cli.StringSliceFlag{
-				Name:     "table",
-				Aliases:  []string{"t"},
-				Usage:    "specify which table(s) to be loaded, this flag could be specified multiple times",
-				Required: true,
-			},
-		},
+		Name:      "table:import",
+		Usage:     "import the defined tables data into xyr",
+		UsageText: "xyr table:import table1 table2 ...",
 		Action: func(c *cli.Context) error {
 			wg := &sync.WaitGroup{}
-			selectedTables := c.StringSlice("table")
+			selectedTables := c.Args().Slice()
+
+			if len(selectedTables) < 1 {
+				return fmt.Errorf("no table specified")
+			}
 
 			for _, selectedTable := range selectedTables {
 				tb, found := env.Tables[selectedTable]

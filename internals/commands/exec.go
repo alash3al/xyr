@@ -17,9 +17,9 @@ func init() {
 // Exec executes an sql statement
 func Exec(env *kernel.Env) *cli.Command {
 	return &cli.Command{
-		Name:            "exec",
-		Usage:           "execute the specified sql statement",
-		SkipFlagParsing: true,
+		Name:      "exec",
+		Usage:     "execute the specified sql statement",
+		UsageText: "xyr exec SELECT * FROM MY_TABLE",
 		Action: func(c *cli.Context) error {
 			stmnt := strings.Join(c.Args().Slice(), " ")
 			if strings.TrimSpace(stmnt) == "" {
