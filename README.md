@@ -27,6 +27,7 @@ $ xyr table:import users
 
 Installation
 ============
+> use this [docker package](https://github.com/alash3al/xyr/pkgs/container/xyr)
 
 Supported Drivers
 =================
