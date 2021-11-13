@@ -2,6 +2,32 @@ xyr [WIP]
 =========
 > `xyr` is a very lightweight, simple and powerful data ETL platform that helps you to query available data sources using `SQL`.
 
+Example
+=======
+> here we define a new table called `users` which will load all json files in that directory (recursive) with any of the following json formats: (object/object[] per-file, newline delimited json objects/object[], or event no delimiter json objects/object[] like what kinesis firehose json output format).
+
+```hcl
+# this file is `./config.xyr.hcl`
+table "users" {
+    // [D]ata [S]ource [N]ame as: "[drivername]://driver_specs"
+    dsn = "jsondir://./tmp/data/users"
+
+    // which columns we want to load
+    // this expect that our json objects contains these properties.
+    columns = ["id", "email"]
+
+    // which filenames we want to be only loaded into xyr using regular expressions
+    loader = ".*"
+}
+```
+
+```bash
+$ xyr table:import users
+```
+
+Installation
+============
+
 Supported Drivers
 =================
 - [x] `jsondir`: for extracting, transforming and loading json documents (objects/[]objects) from local filesystem directory (recursive) into `xyr`.
