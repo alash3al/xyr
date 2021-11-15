@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 
@@ -33,15 +32,15 @@ func Import(env *kernel.Env) *cli.Command {
 				tb, found := env.Tables[selectedTable]
 
 				if !found {
-					log.Fatal(fmt.Sprintf("undefined table %s", tb.Name))
+					kernel.Logger.Fatal(fmt.Sprintf("undefined table %s", selectedTable))
 				}
 
 				if _, err := env.DBConn.Exec("DROP TABLE IF EXISTS " + tb.Name); err != nil {
-					log.Fatal(err)
+					kernel.Logger.Fatal(err)
 				}
 
 				if _, err := env.DBConn.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", tb.Name, strings.Join(tb.Columns, ","))); err != nil {
-					log.Fatal("unable to create table", err)
+					kernel.Logger.Fatal("unable to create table", err)
 				}
 
 				wg.Add(1)
@@ -70,8 +69,10 @@ func load(tb *kernel.Table, env *kernel.Env) {
 			loop = false
 			break
 		case err := <-errChan:
-			log.Println(err)
+			kernel.Logger.Error(err.Error())
 		case result := <-resultChan:
+			kernel.Logger.Info("processing", result)
+
 			filteredResult := map[string]interface{}{}
 			placeholders := []string{}
 			for _, col := range tb.Columns {
@@ -87,15 +88,16 @@ func load(tb *kernel.Table, env *kernel.Env) {
 				placeholders = append(placeholders, ":"+col)
 			}
 			if len(filteredResult) < 1 {
-				fmt.Println(result)
-				log.Println("unable to find a document to be written")
+				kernel.Logger.Error("unable to find a document to be written")
 				continue
 			}
 			querySQL := fmt.Sprintf("INSERT INTO %s VALUES(%s)", tb.Name, strings.Join(placeholders, ","))
 			if _, err := env.DBConn.NamedExec(querySQL, filteredResult); err != nil {
-				log.Println(querySQL, err)
+				kernel.Logger.Error(querySQL, err)
 				continue
 			}
 		}
 	}
+
+	kernel.Logger.Info(fmt.Sprintf("Congrats! now you can execute `xyr exec 'SELECT * FROM %s'`", tb.Name))
 }

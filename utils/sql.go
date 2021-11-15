@@ -1,8 +1,7 @@
 package utils
 
 import (
-	"log"
-
+	"github.com/alash3al/xyr/internals/kernel"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -12,7 +11,7 @@ func SqlAll(rows *sqlx.Rows) []map[string]interface{} {
 		m := map[string]interface{}{}
 
 		if err := rows.MapScan(m); err != nil {
-			log.Println(err)
+			kernel.Logger.Error(err)
 		}
 
 		result = append(result, m)

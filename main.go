@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -29,7 +28,7 @@ func main() {
 	{
 		cfg, err := kernel.LoadConfigFromFile(utils.Getenv("XYRCONFIG", "./config.xyr.hcl"))
 		if err != nil {
-			log.Fatal(err)
+			kernel.Logger.Fatal(err)
 		}
 
 		kernelEnv.Config = cfg
@@ -43,11 +42,11 @@ func main() {
 		}
 
 		if err != nil {
-			log.Fatal(err)
+			kernel.Logger.Fatal(err)
 		}
 
 		if info != nil && !info.IsDir() {
-			log.Fatal(fmt.Errorf("the specified path (%s) isn't a valid directory", kernelEnv.Config.DataDir))
+			kernel.Logger.Fatal(fmt.Errorf("the specified path (%s) isn't a valid directory", kernelEnv.Config.DataDir))
 		}
 	}
 
@@ -55,7 +54,7 @@ func main() {
 	{
 		dbConn, err := sqlx.Connect("sqlite3", filepath.Join(kernelEnv.Config.DataDir, "db.xyr")+"?_journal_mode=wal")
 		if err != nil {
-			log.Fatal(err)
+			kernel.Logger.Fatal(err)
 		}
 
 		kernelEnv.DBConn = dbConn
@@ -66,11 +65,11 @@ func main() {
 		for _, tb := range kernelEnv.Config.Tables {
 			d, err := kernel.OpenImporter(tb.ImporterName, tb.DSN)
 			if err != nil {
-				log.Fatal(err)
+				kernel.Logger.Fatal(err)
 			}
 
 			if len(tb.Columns) < 1 {
-				log.Fatal(fmt.Errorf("there is no columns for table %s", tb.Name))
+				kernel.Logger.Fatal(fmt.Errorf("there is no columns for table %s", tb.Name))
 			}
 
 			kernelEnv.Tables[tb.Name] = tb
