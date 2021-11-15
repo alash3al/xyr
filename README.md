@@ -1,5 +1,5 @@
-xyr [WIP]
-=========
+xyr
+====
 > `xyr` is a very lightweight, simple, and powerful data ETL platform that helps you to query available data sources using `SQL`.
 
 Example
