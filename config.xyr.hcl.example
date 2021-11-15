@@ -16,7 +16,7 @@ table "users2" {
 
 table "users3" {
     driver = "s3jsondir"
-    source = "s3://access_key_url_encoded:secret_key_url_encoded@/bucket_name?region=&ssl=false&path=true&perpage=1000"
+    source = "s3://[access_key_url_encoded]:[secret_key_url_encoded]@[endpoint_url]/bucket_name?region=&ssl=false&path=true&perpage=1000"
     filter = "xyr/users/" # s3 prefix to filter
     columns = ["id", "email"]
 }

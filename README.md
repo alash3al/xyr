@@ -41,18 +41,19 @@ Installation
 
 Supported Drivers
 =================
-| Driver | Source |
----------| ------ |
-| `jsondir`| `/PATH/TO/JSON/DATA/DIR`|
-| `mysql`| `usrname:password@tcp(server:port)/dbname?option1=value1&...`|
-| `postgres`| `postgresql://username:password@server:port/dbname?option1=value1`|
-| `sqlite3`| `/path/to/db.sqlite?option1=value1`|
-| `sqlserver` | `sqlserver://username:password@host/instance?param1=value&param2=value` |
-|             | `sqlserver://username:password@host:port?param1=value&param2=value`|
-|             | `sqlserver://sa@localhost/SQLExpress?database=master&connection+timeout=30`|
-| `hana` |   `hdb://user:password@host:port` |
-| `clickhouse` |   `tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000` |
-| `oracle` |   `tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000` |
+| Driver | Source Connection String |
+---------| ------------------------ |
+| `jsondir`     | `/PATH/TO/JSON/DATA/DIR`|
+| `s3jsondir`   | `s3://[access_key_url_encoded]:[secret_key_url_encoded]@[endpoint_url]/bucket_name?region=&ssl=false&path=true&perpage=1000`|
+| `mysql`       | `usrname:password@tcp(server:port)/dbname?option1=value1&...`|
+| `postgres`    | `postgresql://username:password@server:port/dbname?option1=value1`|
+| `sqlite3`     | `/path/to/db.sqlite?option1=value1`|
+| `sqlserver`   | `sqlserver://username:password@host/instance?param1=value&param2=value` |
+|               | `sqlserver://username:password@host:port?param1=value&param2=value`|
+|               | `sqlserver://sa@localhost/SQLExpress?database=master&connection+timeout=30`|
+| `hana`        | `hdb://user:password@host:port` |
+| `clickhouse`  | `tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000` |
+| `oracle`      | `tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000` |
 
 Use Cases
 =========
