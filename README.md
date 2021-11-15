@@ -86,3 +86,4 @@ Plan
     - [ ] Mysql Protocol?
     - [ ] Redis Protocol?
 - [ ] Improving the code base (iteration 1).
+- [ ] Add another backend instead of sqlite3 as internal datastore?
