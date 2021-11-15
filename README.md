@@ -27,7 +27,7 @@ table "users" {
     // using the filename
     // but if we're using an SQL driver we can provide an sql statement that reads the data
     // from the source SQL based database.
-    loader = ".*"
+    filter = ".*"
 }
 ```
 
