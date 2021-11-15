@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/alash3al/xyr/internals/kernel"
+	"github.com/kyokomi/emoji"
 	"github.com/urfave/cli/v2"
 )
 
@@ -64,6 +65,7 @@ func load(tb *kernel.Table, env *kernel.Env) {
 	loop := true
 
 	for loop {
+		fmt.Println()
 		select {
 		case <-doneChan:
 			loop = false
@@ -71,7 +73,7 @@ func load(tb *kernel.Table, env *kernel.Env) {
 		case err := <-errChan:
 			kernel.Logger.Error(err.Error())
 		case result := <-resultChan:
-			kernel.Logger.Info("processing", result)
+			kernel.Logger.Trace(emoji.Sprintf(":eyes: processing %v", result))
 
 			filteredResult := map[string]interface{}{}
 			placeholders := []string{}
@@ -87,10 +89,12 @@ func load(tb *kernel.Table, env *kernel.Env) {
 				filteredResult[col] = val
 				placeholders = append(placeholders, ":"+col)
 			}
+
 			if len(filteredResult) < 1 {
 				kernel.Logger.Error("unable to find a document to be written")
 				continue
 			}
+
 			querySQL := fmt.Sprintf("INSERT INTO %s VALUES(%s)", tb.Name, strings.Join(placeholders, ","))
 			if _, err := env.DBConn.NamedExec(querySQL, filteredResult); err != nil {
 				kernel.Logger.Error(querySQL, err)
@@ -99,5 +103,6 @@ func load(tb *kernel.Table, env *kernel.Env) {
 		}
 	}
 
-	kernel.Logger.Info(fmt.Sprintf("Congrats! now you can execute `xyr exec 'SELECT * FROM %s'`", tb.Name))
+	fmt.Println()
+	kernel.Logger.Info(emoji.Sprintf("Congrats! :raising_hands: now you can execute `xyr exec 'SELECT * FROM %s'`", tb.Name))
 }
