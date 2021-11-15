@@ -5,7 +5,7 @@ type Table struct {
 	Name         string   `hcl:"name,label"`
 	ImporterName string   `hcl:"driver"`
 	DSN          string   `hcl:"source"`
-	Loader       string   `hcl:"loader"`
+	Filter       string   `hcl:"filter"`
 	Columns      []string `hcl:"columns"`
 
 	ImporterInstance Importer

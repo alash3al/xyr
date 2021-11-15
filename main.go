@@ -13,6 +13,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	_ "github.com/alash3al/xyr/internals/importers/jsondir"
+	_ "github.com/alash3al/xyr/internals/importers/s3jsondir"
 	_ "github.com/alash3al/xyr/internals/importers/sql"
 	_ "github.com/mattn/go-sqlite3"
 )

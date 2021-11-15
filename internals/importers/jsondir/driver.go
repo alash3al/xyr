@@ -1,4 +1,4 @@
-package localjsonobj
+package jsondir
 
 import (
 	"encoding/json"

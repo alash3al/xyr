@@ -61,7 +61,7 @@ func Import(env *kernel.Env) *cli.Command {
 }
 
 func load(tb *kernel.Table, env *kernel.Env) {
-	resultChan, errChan, doneChan := tb.ImporterInstance.Import(tb.Loader)
+	resultChan, errChan, doneChan := tb.ImporterInstance.Import(tb.Filter)
 	loop := true
 
 	for loop {
