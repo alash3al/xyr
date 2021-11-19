@@ -71,7 +71,9 @@ func load(tb *kernel.Table, env *kernel.Env) {
 			loop = false
 			break
 		case err := <-errChan:
-			kernel.Logger.Error(err.Error())
+			if err != nil {
+				kernel.Logger.Error(err.Error())
+			}
 		case result := <-resultChan:
 			kernel.Logger.Trace(emoji.Sprintf(":eyes: processing %v", result))
 

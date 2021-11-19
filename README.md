@@ -2,10 +2,16 @@ xyr
 ====
 > `xyr` is a very lightweight, simple, and powerful data ETL platform that helps you to query available data sources using `SQL`.
 
-Example
-=======
+Example (Local Filesystem)
+===========================
 > here we define a new table called `users` which will load all json files in that directory (recursive) with any of the following json formats: (object/object[] per-file, newline delimited json objects/object[], or event no delimiter json objects/object[] like what kinesis firehose json output format).
 
+> Let's image we have a directory of json files called `/tmp/data/users` and here is an example of a json file there:
+```json
+{"id":10,"email":"u10@example.com"}{"id":20,"email":"u20@example.com"}{"id": 3,"email":"u3@example.com"}{"id": 4,"email":"u4@example.com"}
+```
+
+> Then we can define its schema as following
 ```hcl
 # this file is `./config.xyr.hcl`
 table "users" {
@@ -27,12 +33,45 @@ table "users" {
     // using the filename
     // but if we're using an SQL driver we can provide an sql statement that reads the data
     // from the source SQL based database.
+    // i.e: "SELECT * FROM SOME_TABLE"
     filter = ".*"
 }
 ```
 
+> Now its the time to load it
 ```bash
 $ xyr table:import users
+```
+
+> Now let's query it
+```bash
+$ xyr exec "SELECT * FROM users"
+```
+
+> All tables you define could be joined in the same query easily, let's imagine that we have the following defination
+```hcl
+# this file is `./config.xyr.hcl`
+table "users" {
+    driver = "s3jsondir"
+    source = "s3://ACCESS_KEY:SECRET_KEY@/BUCKET_NAME?region=&ssl=false&path=true&perpage=1000"
+
+    # which prefix we want to select
+    filter = "xyr/users/"
+
+    columns = ["id", "email"]
+}
+
+table "user_vists" {
+    driver = "sql"
+    source = "postgresql://username:password@server:port/dbname?option1=value1"
+    columns = ["user_id", "vists"]
+    filter = "SELECT user_id, count(vists) FROM USERS GROUP BY user_id"
+}
+```
+
+> Now let's join them
+```bash
+$ xyr exec "SELECT * FROM users LEFT JOIN user_vists ON users_vists.user_id = users.id"
 ```
 
 Installation
@@ -53,7 +92,7 @@ Supported Drivers
 |               | `sqlserver://sa@localhost/SQLExpress?database=master&connection+timeout=30`|
 | `hana`        | `hdb://user:password@host:port` |
 | `clickhouse`  | `tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000` |
-| `oracle`      | `tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000` |
+| `oracle`      | `oracle://user:pass@server1/service?server=server2&server=server3` |
 
 Use Cases
 =========
