@@ -67,7 +67,7 @@ table "users" {
 }
 
 table "user_vists" {
-    driver = "sql"
+    driver = "postgres"
     source = "postgresql://username:password@server:port/dbname?option1=value1"
     columns = ["user_id", "vists"]
     filter = "SELECT user_id, count(vists) FROM USERS GROUP BY user_id"
