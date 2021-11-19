@@ -104,7 +104,6 @@ Use Cases
 - Simple Presto Alternative.
 - Simple AWS Athena Alternative.
 - Convert your JSON documents into a SQL DB.
-- Query your CSV files easily and join them with other data.
 
 How does it work?
 ==================
