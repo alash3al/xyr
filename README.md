@@ -13,6 +13,9 @@ Example (Local Filesystem)
 
 > Then we can define its schema as following
 ```hcl
+# where xyr should store its internal database
+data_dir = "./tmp/db/"
+
 # this file is `./config.xyr.hcl`
 table "users" {
     // the driver we want
@@ -50,7 +53,9 @@ $ xyr exec "SELECT * FROM users"
 
 > All tables you define could be joined in the same query easily, let's imagine that we have the following defination
 ```hcl
-# this file is `./config.xyr.hcl`
+# where xyr should store its internal database
+data_dir = "./tmp/db/"
+
 table "users" {
     driver = "s3jsondir"
     source = "s3://ACCESS_KEY:SECRET_KEY@/BUCKET_NAME?region=&ssl=false&path=true&perpage=1000"
