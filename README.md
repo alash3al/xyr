@@ -96,7 +96,7 @@ Supported Drivers
 | Driver | Source Connection String |
 ---------| ------------------------ |
 | `jsondir`     | `/PATH/TO/JSON/DATA/DIR`|
-| `s3jsondir`   | `s3://[access_key_url_encoded]:[secret_key_url_encoded]@[endpoint_url]/bucket_name?region=&ssl=false&path=true&perpage=1000`|
+| `s3jsondir`   | `s3://[access_key_url_encoded]:[secret_key_url_encoded]@[endpoint_url]/bucket_name?region=&ssl=false&path=true&perpage=1000&downloaders_count=8&downloader_concurrency=8`|
 | `mysql`       | `usrname:password@tcp(server:port)/dbname?option1=value1&...`|
 | `postgres`    | `postgresql://username:password@server:port/dbname?option1=value1`|
 | `sqlite3`     | `/path/to/db.sqlite?option1=value1`|
