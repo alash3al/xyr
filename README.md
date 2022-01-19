@@ -53,8 +53,16 @@ $ xyr exec "SELECT * FROM users"
 
 > All tables you define could be joined in the same query easily, let's imagine that we have the following defination
 ```hcl
+# debug mode "affects the log level"
+debug = true
+
+# how many workers to use to write into our sqlite db
+# 0 means current cpu cores count
+workers_count = 0
+
 # where xyr should store its internal database
 data_dir = "./tmp/db/"
+
 
 table "users" {
     driver = "s3jsondir"

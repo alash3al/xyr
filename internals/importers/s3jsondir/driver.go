@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -107,43 +108,47 @@ func (d *Driver) Import(s3prefix string) (<-chan map[string]interface{}, <-chan 
 				continue
 			}
 
-			output := &aws.WriteAtBuffer{}
-			req := &s3.GetObjectInput{
-				Bucket: aws.String(d.bucket),
-				Key:    item.Key,
-			}
+			for i := 0; i < runtime.NumCPU(); i++ {
+				go (func(item *s3.Object) {
+					output := &aws.WriteAtBuffer{}
+					req := &s3.GetObjectInput{
+						Bucket: aws.String(d.bucket),
+						Key:    item.Key,
+					}
 
-			if _, err := s3manager.NewDownloaderWithClient(d.s3).Download(output, req); err != nil {
-				errChan <- err
-				continue
-			}
-
-			buf := bytes.NewBuffer(output.Bytes())
-			decoder := json.NewDecoder(buf)
-
-			for {
-				var val interface{}
-
-				if decoder.Decode(&val) == io.EOF {
-					break
-				}
-
-				switch val := val.(type) {
-				case map[string]interface{}:
-					resultChan <- val
-				case []interface{}:
-					mSlice, err := utils.InterfaceSliceToMapStringInterfaceSlice(val)
-					if err != nil {
+					if _, err := s3manager.NewDownloaderWithClient(d.s3).Download(output, req); err != nil {
 						errChan <- err
-						continue
-					} else {
-						for _, item := range mSlice {
-							resultChan <- item
+						return
+					}
+
+					buf := bytes.NewBuffer(output.Bytes())
+					decoder := json.NewDecoder(buf)
+
+					for {
+						var val interface{}
+
+						if decoder.Decode(&val) == io.EOF {
+							break
+						}
+
+						switch val := val.(type) {
+						case map[string]interface{}:
+							resultChan <- val
+						case []interface{}:
+							mSlice, err := utils.InterfaceSliceToMapStringInterfaceSlice(val)
+							if err != nil {
+								errChan <- err
+								continue
+							} else {
+								for _, item := range mSlice {
+									resultChan <- item
+								}
+							}
+						default:
+							errChan <- fmt.Errorf("unsupported value (%v), we only support array of objects or just objects", val)
 						}
 					}
-				default:
-					errChan <- fmt.Errorf("unsupported value (%v), we only support array of objects or just objects", val)
-				}
+				})(item)
 			}
 		}
 

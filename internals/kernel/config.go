@@ -5,8 +5,10 @@ import (
 )
 
 type Config struct {
-	DataDir string   `hcl:"data_dir"`
-	Tables  []*Table `hcl:"table,block"`
+	DataDir      string   `hcl:"data_dir"`
+	Tables       []*Table `hcl:"table,block"`
+	Debug        bool     `hcl:"debug"`
+	WorkersCount int      `hcl:"workers_count"`
 }
 
 func LoadConfigFromFile(filename string) (*Config, error) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/alash3al/xyr/internals/commands"
 	"github.com/alash3al/xyr/internals/kernel"
@@ -50,9 +51,23 @@ func main() {
 		}
 	}
 
+	// workers count
+	{
+		if kernelEnv.Config.WorkersCount < 1 {
+			kernelEnv.Config.WorkersCount = runtime.NumCPU()
+		}
+	}
+
+	// logger
+	{
+		if kernelEnv.Config.Debug {
+			kernel.Logger.WithoutDebug()
+		}
+	}
+
 	// Initialize the storage engine
 	{
-		dbConn, err := sqlx.Connect("sqlite3", filepath.Join(kernelEnv.Config.DataDir, "db.xyr")+"?_journal_mode=wal")
+		dbConn, err := sqlx.Connect("sqlite3", filepath.Join(kernelEnv.Config.DataDir, "db.xyr")+"?_journal_mode=wal&cache=shared&_sync=0")
 		if err != nil {
 			kernel.Logger.Fatal(err)
 		}

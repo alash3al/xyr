@@ -62,49 +62,60 @@ func Import(env *kernel.Env) *cli.Command {
 
 func load(tb *kernel.Table, env *kernel.Env) {
 	resultChan, errChan, doneChan := tb.ImporterInstance.Import(tb.Filter)
-	loop := true
+	wg := &sync.WaitGroup{}
 
-	for loop {
-		fmt.Println()
-		select {
-		case <-doneChan:
-			loop = false
-			break
-		case err := <-errChan:
-			if err != nil {
-				kernel.Logger.Error(err.Error())
-			}
-		case result := <-resultChan:
-			kernel.Logger.Trace(emoji.Sprintf(":eyes: processing %v", result))
+	for i := 0; i < env.Config.WorkersCount; i++ {
+		wg.Add(1)
+		go (func() {
+			defer wg.Done()
 
-			filteredResult := map[string]interface{}{}
-			placeholders := []string{}
-			for _, col := range tb.Columns {
-				val, exists := result[col]
-				if !exists {
-					continue
+			loop := true
+
+			for loop {
+				select {
+				case <-doneChan:
+					loop = false
+					break
+				case err := <-errChan:
+					if err != nil {
+						kernel.Logger.Error(err.Error())
+					}
+				case result := <-resultChan:
+					kernel.Logger.Trace(emoji.Sprintf(":eyes: processing %v", result))
+
+					filteredResult := map[string]interface{}{}
+					placeholders := []string{}
+					for _, col := range tb.Columns {
+						val, exists := result[col]
+						if !exists {
+							continue
+						}
+
+						switch val.(type) {
+						case []interface{}, map[string]interface{}:
+							val, _ = json.Marshal(val)
+						}
+
+						filteredResult[col] = val
+						placeholders = append(placeholders, ":"+col)
+					}
+
+					if len(filteredResult) < 1 {
+						kernel.Logger.Error("unable to find a document to be written")
+						continue
+					}
+
+					querySQL := fmt.Sprintf("INSERT INTO %s VALUES(%s)", tb.Name, strings.Join(placeholders, ","))
+					if _, err := env.DBConn.NamedExec(querySQL, filteredResult); err != nil {
+						kernel.Logger.Error(querySQL, err)
+						continue
+					}
 				}
-				switch val.(type) {
-				case []interface{}, map[string]interface{}:
-					val, _ = json.Marshal(val)
-				}
-				filteredResult[col] = val
-				placeholders = append(placeholders, ":"+col)
 			}
-
-			if len(filteredResult) < 1 {
-				kernel.Logger.Error("unable to find a document to be written")
-				continue
-			}
-
-			querySQL := fmt.Sprintf("INSERT INTO %s VALUES(%s)", tb.Name, strings.Join(placeholders, ","))
-			if _, err := env.DBConn.NamedExec(querySQL, filteredResult); err != nil {
-				kernel.Logger.Error(querySQL, err)
-				continue
-			}
-		}
+		})()
 	}
 
-	fmt.Println()
+	wg.Wait()
+
 	kernel.Logger.Info(emoji.Sprintf("Congrats! :raising_hands: now you can execute `xyr exec 'SELECT * FROM %s'`", tb.Name))
 }
