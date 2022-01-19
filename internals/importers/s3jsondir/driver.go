@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Jeffail/tunny"
 	"github.com/alash3al/xyr/utils"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -18,11 +19,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-// s3://s3-server-endpoint/bucket?region=region-name&ssl=true&path=true&perpage=1000
+// s3://s3-server-endpoint/bucket?region=region-name&ssl=true&path=true&perpage=1000&downloaders=4
 type Driver struct {
-	s3      *s3.S3
-	bucket  string
-	perpage int64
+	s3               *s3.S3
+	bucket           string
+	perpage          int64
+	downloadersCount int64
+	pool             *tunny.Pool
 }
 
 // Open implements Importer#open
@@ -87,6 +90,11 @@ func (d *Driver) Open(dsn string) error {
 		return fmt.Errorf("unknown bucket name specified (%s)", d.bucket)
 	}
 
+	d.downloadersCount, _ = strconv.ParseInt(parsedDSN.Query().Get("perpage"), 10, 64)
+	if d.downloadersCount < 1 {
+		d.downloadersCount = int64(runtime.NumCPU())
+	}
+
 	return nil
 }
 
@@ -102,54 +110,58 @@ func (d *Driver) Import(s3prefix string) (<-chan map[string]interface{}, <-chan 
 		MaxKeys: aws.Int64(d.perpage),
 	}
 
+	pool := tunny.NewFunc(int(d.downloadersCount), func(itemIfc interface{}) interface{} {
+		item := itemIfc.(*s3.Object)
+
+		output := &aws.WriteAtBuffer{}
+		req := &s3.GetObjectInput{
+			Bucket: aws.String(d.bucket),
+			Key:    item.Key,
+		}
+
+		if _, err := s3manager.NewDownloaderWithClient(d.s3).Download(output, req); err != nil {
+			errChan <- err
+			return nil
+		}
+
+		buf := bytes.NewBuffer(output.Bytes())
+		decoder := json.NewDecoder(buf)
+
+		for {
+			var val interface{}
+
+			if decoder.Decode(&val) == io.EOF {
+				break
+			}
+
+			switch val := val.(type) {
+			case map[string]interface{}:
+				resultChan <- val
+			case []interface{}:
+				mSlice, err := utils.InterfaceSliceToMapStringInterfaceSlice(val)
+				if err != nil {
+					errChan <- err
+					continue
+				} else {
+					for _, item := range mSlice {
+						resultChan <- item
+					}
+				}
+			default:
+				errChan <- fmt.Errorf("unsupported value (%v), we only support array of objects or just objects", val)
+			}
+		}
+
+		return nil
+	})
+
 	walker := func(objectsList *s3.ListObjectsV2Output, isLastPage bool) bool {
 		for _, item := range objectsList.Contents {
 			if *item.Size < 1 {
 				continue
 			}
 
-			for i := 0; i < runtime.NumCPU(); i++ {
-				go (func(item *s3.Object) {
-					output := &aws.WriteAtBuffer{}
-					req := &s3.GetObjectInput{
-						Bucket: aws.String(d.bucket),
-						Key:    item.Key,
-					}
-
-					if _, err := s3manager.NewDownloaderWithClient(d.s3).Download(output, req); err != nil {
-						errChan <- err
-						return
-					}
-
-					buf := bytes.NewBuffer(output.Bytes())
-					decoder := json.NewDecoder(buf)
-
-					for {
-						var val interface{}
-
-						if decoder.Decode(&val) == io.EOF {
-							break
-						}
-
-						switch val := val.(type) {
-						case map[string]interface{}:
-							resultChan <- val
-						case []interface{}:
-							mSlice, err := utils.InterfaceSliceToMapStringInterfaceSlice(val)
-							if err != nil {
-								errChan <- err
-								continue
-							} else {
-								for _, item := range mSlice {
-									resultChan <- item
-								}
-							}
-						default:
-							errChan <- fmt.Errorf("unsupported value (%v), we only support array of objects or just objects", val)
-						}
-					}
-				})(item)
-			}
+			pool.Process(item)
 		}
 
 		return true

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -10,6 +13,7 @@ import (
 	"github.com/alash3al/xyr/internals/kernel"
 	"github.com/alash3al/xyr/utils"
 	"github.com/jmoiron/sqlx"
+	"github.com/rs/dnscache"
 	"github.com/urfave/cli/v2"
 
 	_ "github.com/alash3al/xyr/internals/importers/jsondir"
@@ -60,7 +64,7 @@ func main() {
 
 	// logger
 	{
-		if kernelEnv.Config.Debug {
+		if !kernelEnv.Config.Debug {
 			kernel.Logger.WithoutDebug()
 		}
 	}
@@ -89,6 +93,32 @@ func main() {
 
 			kernelEnv.Tables[tb.Name] = tb
 			kernelEnv.Tables[tb.Name].ImporterInstance = d
+		}
+	}
+
+	// default http transport dns caching
+	{
+		r := &dnscache.Resolver{}
+		http.DefaultClient.Transport = &http.Transport{
+			MaxIdleConnsPerHost: 64,
+			DialContext: func(ctx context.Context, network string, addr string) (conn net.Conn, err error) {
+				host, port, err := net.SplitHostPort(addr)
+				if err != nil {
+					return nil, err
+				}
+				ips, err := r.LookupHost(ctx, host)
+				if err != nil {
+					return nil, err
+				}
+				for _, ip := range ips {
+					var dialer net.Dialer
+					conn, err = dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
+					if err == nil {
+						break
+					}
+				}
+				return
+			},
 		}
 	}
 
