@@ -118,7 +118,6 @@ func (d *Driver) Import(s3prefix string) (<-chan map[string]interface{}, <-chan 
 
 	pool := tunny.NewFunc(int(d.downloadersCount), func(itemIfc interface{}) interface{} {
 		item := itemIfc.(*s3.Object)
-
 		output := &aws.WriteAtBuffer{}
 		req := &s3.GetObjectInput{
 			Bucket: aws.String(d.bucket),
@@ -127,7 +126,6 @@ func (d *Driver) Import(s3prefix string) (<-chan map[string]interface{}, <-chan 
 
 		if _, err := s3manager.NewDownloaderWithClient(d.s3, func(downloader *s3manager.Downloader) {
 			downloader.Concurrency = int(d.downloaderConcurrency)
-			downloader.PartSize = s3manager.DefaultDownloadPartSize * 2
 		}).Download(output, req); err != nil {
 			errChan <- err
 			return nil
